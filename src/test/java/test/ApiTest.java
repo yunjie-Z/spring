@@ -1,12 +1,24 @@
 package test;
 
 
+import cn.zyj.springframework.aop.AdvisedSupport;
+import cn.zyj.springframework.aop.MethodMatcher;
+import cn.zyj.springframework.aop.TargetSource;
+import cn.zyj.springframework.aop.aspectj.AspectJExpressionPointcut;
+import cn.zyj.springframework.aop.framework.ProxyFactory;
+import cn.zyj.springframework.aop.framework.ReflectiveMethodInvocation;
+import cn.zyj.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor;
 import cn.zyj.springframework.context.support.ClassPathXmlApplicationContext;
 import cn.zyj.springframework.beans.factory.support.DefaultListableBeanFactory;
 import cn.zyj.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.Before;
 import org.junit.Test;
 import org.openjdk.jol.info.ClassLayout;
+import test.aop.AopUserService;
+import test.aop.IUserService;
+import test.aop.UserServiceBeforeAdvice;
+import test.aop.UserServiceInterceptor;
 import test.bean.UserService;
 import test.common.MyBeanFactoryPostProcessor;
 import test.common.MyBeanPostProcessor;
@@ -14,6 +26,9 @@ import test.event.CustomEvent;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 /**
  * 博客：https://bugstack.cn - 沉淀、分享、成长，让自己和他人都能有所收获！
@@ -33,10 +48,6 @@ public class ApiTest {
         System.out.println("测试结果：" + result);
 
     }
-
-
-
-
 
     @Test
     public void test_BeanFactoryPostProcessorAndBeanPostProcessor(){
@@ -71,7 +82,6 @@ public class ApiTest {
         System.out.println("测试结果：" + userService.queryUserInfo());
     }
 
-
     @Test
     public void test_prototype() {
         // 1.初始化 BeanFactory
@@ -91,13 +101,93 @@ public class ApiTest {
         System.out.println(ClassLayout.parseInstance(userService01).toPrintable());
     }
 
-
     @Test
     public void test_event() {
         ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:event.xml");
         applicationContext.publishEvent(new CustomEvent(applicationContext, 1019129009086763L, "成功了！"));
 
         applicationContext.registerShutdownHook();
+    }
+
+
+
+
+    //---------------------AOPtest---------------------------
+
+
+    private AdvisedSupport advisedSupport;
+
+    @Before
+    public void init(){
+        IUserService userService = new AopUserService();
+        advisedSupport = new AdvisedSupport();
+        advisedSupport.setTargetSource(new TargetSource(userService));
+        advisedSupport.setMethodInterceptor(new UserServiceInterceptor());
+        advisedSupport.setMethodMatcher(new AspectJExpressionPointcut("execution(* test.aop.IUserService.*(..))"));
+    }
+
+    @Test
+    public void test_proxyFactory() {
+        advisedSupport.setProxyTargetClass(false); // false/true，JDK动态代理、CGlib动态代理
+        IUserService proxy = (IUserService) new ProxyFactory(advisedSupport).getProxy();
+
+        System.out.println("测试结果：" + proxy.queryUserInfo());
+    }
+
+    @Test
+    public void test_beforeAdvice() {
+        UserServiceBeforeAdvice beforeAdvice = new UserServiceBeforeAdvice();
+        MethodBeforeAdviceInterceptor interceptor = new MethodBeforeAdviceInterceptor(beforeAdvice);
+        advisedSupport.setMethodInterceptor(interceptor);
+
+        IUserService proxy = (IUserService) new ProxyFactory(advisedSupport).getProxy();
+        System.out.println("测试结果：" + proxy.queryUserInfo());
+    }
+
+    @Test
+    public void test_aop() {
+        ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:aop.xml");
+
+        IUserService userService = applicationContext.getBean("userService", IUserService.class);
+        System.out.println("测试结果：" + userService.queryUserInfo());
+    }
+
+
+    @Test
+    public void test_proxy_method() {
+        // 目标对象(可以替换成任何的目标对象)
+        Object targetObj = new AopUserService();
+
+        // AOP 代理
+        IUserService proxy = (IUserService) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), targetObj.getClass().getInterfaces(), new InvocationHandler() {
+            // 方法匹配器
+            MethodMatcher methodMatcher = new AspectJExpressionPointcut("execution(* test.aop.IUserService.*(..))");
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                if (methodMatcher.matches(method, targetObj.getClass())) {
+                    // 方法拦截器
+                    MethodInterceptor methodInterceptor = invocation -> {
+                        long start = System.currentTimeMillis();
+                        try {
+                            return invocation.proceed();
+                        } finally {
+                            System.out.println("监控 - Begin By AOP");
+                            System.out.println("方法名称：" + invocation.getMethod().getName());
+                            System.out.println("方法耗时：" + (System.currentTimeMillis() - start) + "ms");
+                            System.out.println("监控 - End\r\n");
+                        }
+                    };
+                    // 反射调用
+                    return methodInterceptor.invoke(new ReflectiveMethodInvocation(targetObj, method, args));
+                }
+                return method.invoke(targetObj, args);
+            }
+        });
+
+        String result = proxy.queryUserInfo();
+        System.out.println("测试结果：" + result);
+
     }
 
 }
