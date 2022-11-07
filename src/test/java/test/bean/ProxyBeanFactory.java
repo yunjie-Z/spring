@@ -19,7 +19,7 @@ public class ProxyBeanFactory implements FactoryBean<IUserDao> {
             if ("toString".equals(method.getName())) return this.toString();
             
             Map<String, String> hashMap = new HashMap<>();
-            hashMap.put("10001", "小傅哥");
+            hashMap.put("10001", "傅哥");
             hashMap.put("10002", "八杯水");
             hashMap.put("10003", "阿毛");
             

@@ -9,9 +9,6 @@ import cn.zyj.springframework.beans.PropertyValues;
  * and a callback after instantiation but before explicit properties are set or
  * autowiring occurs.
  * <p>
- * 博客：https://bugstack.cn - 沉淀、分享、成长，让自己和他人都能有所收获！
- * 公众号：bugstack虫洞栈
- * Create by 小傅哥(fustack)
  */
 public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 
