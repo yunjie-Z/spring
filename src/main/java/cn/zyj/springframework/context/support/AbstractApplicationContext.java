@@ -144,4 +144,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
         applicationEventMulticaster.multicastEvent(event);
     }
 
+    @Override
+    public <T> T getBean(Class<T> requiredType) throws BeansException {
+        return getBeanFactory().getBean(requiredType);
+    }
+
 }
