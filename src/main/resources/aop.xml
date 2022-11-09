@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans>
 
-    <bean id="userService" class="test.aop.AopUserService"/>
+    <bean id="userService" class="test.bean.UserService">
+        <property name="token" value="RejDlI78hu223Opo983Ds"/>
+    </bean>
 
     <bean class="cn.zyj.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"/>
 
-    <bean id="beforeAdvice" class="test.aop.UserServiceBeforeAdvice"/>
+    <bean id="beforeAdvice" class="test.bean.UserServiceBeforeAdvice"/>
 
     <bean id="methodInterceptor" class="cn.zyj.springframework.aop.framework.adapter.MethodBeforeAdviceInterceptor">
         <property name="advice" ref="beforeAdvice"/>
     </bean>
 
     <bean id="pointcutAdvisor" class="cn.zyj.springframework.aop.aspectj.AspectJExpressionPointcutAdvisor">
-        <property name="expression" value="execution(* test.aop.IUserService.*(..))"/>
+        <property name="expression" value="execution(* test.bean.IUserService.*(..))"/>
         <property name="advice" ref="methodInterceptor"/>
     </bean>
 

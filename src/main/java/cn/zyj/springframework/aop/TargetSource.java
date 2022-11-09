@@ -1,5 +1,7 @@
 package cn.zyj.springframework.aop;
 
+import cn.zyj.springframework.util.ClassUtils;
+
 /**
  * A <code>TargetSource</code> is used to obtain the current "target" of
  * an AOP invocation, which will be invoked via reflection if no around
@@ -24,7 +26,9 @@ public class TargetSource {
      * @return the type of targets returned by this {@link TargetSource}
      */
     public Class<?>[] getTargetClass(){
-        return this.target.getClass().getInterfaces();
+        Class<?> clazz = this.target.getClass();
+        clazz = ClassUtils.isCglibProxyClass(clazz)?clazz.getSuperclass():clazz;
+        return clazz.getInterfaces();
     }
 
     /**

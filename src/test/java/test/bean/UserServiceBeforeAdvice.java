@@ -1,5 +1,4 @@
-package test.aop;
-
+package test.bean;
 
 import cn.zyj.springframework.aop.MethodBeforeAdvice;
 

@@ -1,4 +1,4 @@
-package test.aop;
+package test.bean;
 
 public interface IUserService {
 
